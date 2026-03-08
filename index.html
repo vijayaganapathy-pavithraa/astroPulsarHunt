@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operation: Pulsar Hunt</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #020810;
+    --bg2: #060f1e;
+    --panel: #0a1628;
+    --border: #0d3060;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7fff00;
+    --text: #c8e0ff;
+    --dim: #4a6080;
+    --success: #00ff88;
+    --danger: #ff3366;
+    --glow: 0 0 20px rgba(0,212,255,0.4);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Rajdhani',sans-serif; min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%,rgba(255,255,255,.8) 0%,transparent 100%),
+      radial-gradient(1px 1px at 30% 60%,rgba(255,255,255,.6) 0%,transparent 100%),
+      radial-gradient(1.5px 1.5px at 50% 10%,rgba(255,255,255,.9) 0%,transparent 100%),
+      radial-gradient(1px 1px at 70% 40%,rgba(255,255,255,.5) 0%,transparent 100%),
+      radial-gradient(1px 1px at 85% 75%,rgba(255,255,255,.7) 0%,transparent 100%),
+      radial-gradient(1px 1px at 15% 85%,rgba(255,255,255,.6) 0%,transparent 100%),
+      radial-gradient(1.5px 1.5px at 60% 90%,rgba(255,255,255,.8) 0%,transparent 100%),
+      radial-gradient(1px 1px at 25% 35%,rgba(200,220,255,.6) 0%,transparent 100%),
+      radial-gradient(1px 1px at 75% 55%,rgba(200,220,255,.5) 0%,transparent 100%),
+      radial-gradient(1px 1px at 90% 15%,rgba(255,255,255,.5) 0%,transparent 100%);
+    pointer-events:none; z-index:0;
+  }
+  .scanline {
+    position:fixed; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    opacity:.3; animation:scan 4s linear infinite; z-index:1; pointer-events:none;
+  }
+  @keyframes scan { 0%{top:0} 100%{top:100vh} }
+
+  .container { max-width:760px; margin:0 auto; padding:20px; position:relative; z-index:2; }
+
+  /* HEADER */
+  .header { text-align:center; padding:36px 0 26px; border-bottom:1px solid var(--border); margin-bottom:26px; }
+  .mission-label { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:4px; color:var(--accent2); margin-bottom:10px; animation:blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
+  h1 { font-family:'Orbitron',monospace; font-size:clamp(22px,5vw,40px); font-weight:900; color:#fff; text-shadow:0 0 30px var(--accent),0 0 60px rgba(0,212,255,.3); letter-spacing:2px; line-height:1.1; }
+  .subtitle { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--dim); margin-top:10px; letter-spacing:2px; }
+
+  /* PANEL */
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:24px; margin-bottom:16px; position:relative; overflow:hidden; }
+  .panel::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:linear-gradient(180deg,var(--accent),transparent); }
+  .panel-title { font-family:'Orbitron',monospace; font-size:11px; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+  .panel-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+
+  /* SCREENS */
+  .screen { display:none; }
+  .screen.active { display:block; animation:fadeIn .3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  /* INPUTS */
+  input[type="text"] {
+    width:100%; background:var(--bg2); border:1px solid var(--border);
+    color:var(--text); font-family:'Share Tech Mono',monospace;
+    font-size:15px; padding:12px 15px; border-radius:3px; outline:none;
+    transition:border-color .3s,box-shadow .3s; letter-spacing:2px;
+  }
+  input:focus { border-color:var(--accent); box-shadow:var(--glow); }
+  input::placeholder { color:var(--dim); letter-spacing:1px; font-size:13px; }
+  label { display:block; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--dim); margin-bottom:7px; letter-spacing:1px; }
+
+  /* BUTTONS */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 26px; font-family:'Orbitron',monospace; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; border:none; border-radius:3px; cursor:pointer; transition:all .2s; }
+  .btn-primary { background:var(--accent); color:var(--bg); box-shadow:var(--glow); }
+  .btn-primary:hover { background:#fff; box-shadow:0 0 40px rgba(0,212,255,.8); transform:translateY(-1px); }
+  .btn-secondary { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  .btn-secondary:hover { background:rgba(0,212,255,.08); }
+  .btn-success { background:var(--success); color:var(--bg); box-shadow:0 0 20px rgba(0,255,136,.4); }
+  .btn-danger { background:var(--danger); color:#fff; }
+  .btn-full { width:100%; }
+
+  /* ALERTS */
+  .alert { padding:10px 15px; border-radius:3px; font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:1px; margin-bottom:13px; display:none; }
+  .alert.error { background:rgba(255,51,102,.1); border:1px solid var(--danger); color:var(--danger); display:block; }
+  .alert.info  { background:rgba(0,212,255,.05); border:1px solid var(--accent); color:var(--accent); display:block; }
+  .alert.success { background:rgba(0,255,136,.07); border:1px solid var(--success); color:var(--success); display:block; }
+
+  /* TIMER */
+  .live-timer { font-family:'Orbitron',monospace; font-size:12px; color:var(--accent2); text-align:right; margin-bottom:12px; letter-spacing:2px; }
+
+  /* MODE SELECTOR */
+  .mode-sel { display:flex; gap:14px; }
+  .mode-btn { flex:1; padding:20px 10px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; cursor:pointer; text-align:center; transition:all .2s; color:var(--text); font-family:'Rajdhani',sans-serif; }
+  .mode-btn:hover { border-color:var(--accent); background:rgba(0,212,255,.05); }
+  .mode-icon { font-size:30px; margin-bottom:8px; }
+  .mode-name { font-family:'Orbitron',monospace; font-size:11px; letter-spacing:2px; color:var(--accent); margin-bottom:4px; }
+  .mode-desc { font-size:13px; color:var(--dim); }
+
+  /* NODE TRACK */
+  .node-track { display:flex; gap:0; margin-bottom:22px; position:relative; }
+  .node-track::before { content:''; position:absolute; top:22px; left:24px; right:24px; height:2px; background:var(--border); z-index:0; }
+  .node-step { flex:1; text-align:center; position:relative; z-index:1; }
+  .node-circle { width:46px; height:46px; border-radius:50%; border:2px solid var(--border); background:var(--bg2); display:flex; align-items:center; justify-content:center; margin:0 auto 8px; font-size:18px; transition:all .4s; }
+  .node-step.done .node-circle { border-color:var(--success); background:rgba(0,255,136,.1); box-shadow:0 0 14px rgba(0,255,136,.3); }
+  .node-step.active .node-circle { border-color:var(--accent); background:rgba(0,212,255,.1); box-shadow:0 0 14px rgba(0,212,255,.3); animation:pulse-ring 1.5s ease-in-out infinite; }
+  .node-step.locked .node-circle { opacity:.3; }
+  @keyframes pulse-ring { 0%,100%{box-shadow:0 0 10px rgba(0,212,255,.3)} 50%{box-shadow:0 0 22px rgba(0,212,255,.7)} }
+  .node-lbl { font-family:'Orbitron',monospace; font-size:9px; letter-spacing:1px; color:var(--dim); }
+  .node-step.done .node-lbl { color:var(--success); }
+  .node-step.active .node-lbl { color:var(--accent); }
+
+  /* PROGRESS */
+  .prog-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:2px; height:5px; margin-bottom:20px; overflow:hidden; }
+  .prog-bar { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent3)); border-radius:2px; transition:width .5s ease; box-shadow:0 0 10px rgba(0,212,255,.5); }
+
+  /* PW BOX */
+  .pw-box { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:18px; margin-bottom:16px; }
+  .pw-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .pw-head-icon { font-size:26px; }
+  .pw-head-name { font-family:'Orbitron',monospace; font-size:13px; color:var(--accent); letter-spacing:2px; }
+  .pw-head-hint { font-size:13px; color:var(--dim); margin-top:3px; }
+  .pw-row { display:flex; gap:10px; }
+  .pw-row input { flex:1; }
+
+  /* FRAGMENTS */
+  .frags { display:grid; gap:8px; margin-bottom:18px; }
+  .frag { background:var(--bg2); border:1px solid var(--border); border-radius:3px; padding:12px 15px; display:flex; justify-content:space-between; align-items:center; font-family:'Share Tech Mono',monospace; font-size:13px; }
+  .frag-key { color:var(--dim); }
+  .frag-val { color:var(--accent3); }
+
+  /* DECODE */
+  .dq { margin-bottom:20px; }
+  .dq-text { font-size:15px; color:var(--text); margin-bottom:11px; font-weight:600; line-height:1.5; }
+  .dq-opts { display:grid; gap:7px; }
+  .dq-opt { background:var(--bg2); border:1px solid var(--border); border-radius:3px; padding:11px 15px; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:15px; color:var(--text); text-align:left; transition:all .2s; }
+  .dq-opt:hover:not(:disabled) { border-color:var(--accent); background:rgba(0,212,255,.05); color:var(--accent); }
+  .dq-opt.correct { border-color:var(--success); background:rgba(0,255,136,.07); color:var(--success); }
+  .dq-opt.wrong { border-color:var(--danger); background:rgba(255,51,102,.07); color:var(--danger); }
+  .dq-opt:disabled { cursor:default; }
+
+  /* STAR MAP */
+  .map-wrap { position:relative; width:100%; aspect-ratio:2/1; background:var(--bg); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:14px; cursor:crosshair; }
+  #starMap { width:100%; height:100%; display:block; }
+  .map-ra { position:absolute; bottom:6px; left:10px; font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--dim); letter-spacing:1px; }
+
+  /* LEADERBOARD */
+  .lb-table { width:100%; border-collapse:collapse; }
+  .lb-table th { font-family:'Orbitron',monospace; font-size:10px; letter-spacing:2px; color:var(--accent); padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); text-transform:uppercase; }
+  .lb-table td { padding:10px 12px; font-family:'Share Tech Mono',monospace; font-size:13px; border-bottom:1px solid rgba(13,48,96,.4); }
+  .lb-table tr:nth-child(1) td { color:#ffd700; }
+  .lb-table tr:nth-child(2) td { color:#c0c0c0; }
+  .lb-table tr:nth-child(3) td { color:#cd7f32; }
+  .lb-empty { text-align:center; padding:32px; color:var(--dim); font-family:'Share Tech Mono',monospace; font-size:12px; }
+
+  /* COMPLETE */
+  .done-banner { text-align:center; padding:26px; background:rgba(0,255,136,.04); border:1px solid var(--success); border-radius:4px; margin-bottom:16px; }
+  .done-banner h2 { font-family:'Orbitron',monospace; font-size:20px; color:var(--success); text-shadow:0 0 20px rgba(0,255,136,.5); margin-bottom:10px; }
+  .time-big { font-family:'Orbitron',monospace; font-size:34px; color:var(--accent); text-shadow:var(--glow); margin:13px 0; }
+
+  /* ADMIN */
+  .tab-nav { display:flex; gap:2px; margin-bottom:18px; background:var(--bg2); padding:4px; border-radius:4px; }
+  .tab-btn { flex:1; padding:9px; background:transparent; border:none; color:var(--dim); font-family:'Orbitron',monospace; font-size:10px; letter-spacing:1px; cursor:pointer; border-radius:2px; transition:all .2s; text-transform:uppercase; }
+  .tab-btn.active { background:var(--panel); color:var(--accent); border:1px solid var(--border); }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  .pw-setup { display:grid; gap:13px; margin-bottom:18px; }
+  .pw-row-admin { display:flex; align-items:center; gap:12px; }
+  .pw-tag { font-family:'Orbitron',monospace; font-size:11px; color:var(--accent); letter-spacing:1px; min-width:110px; display:flex; align-items:center; gap:6px; }
+  .admin-input { flex:1; background:var(--bg2); border:1px solid var(--border); color:var(--text); font-family:'Share Tech Mono',monospace; font-size:14px; padding:10px 13px; border-radius:3px; outline:none; letter-spacing:2px; text-transform:uppercase; transition:border-color .2s; }
+  .admin-input:focus { border-color:var(--accent); }
+  .saved-badge { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--success); min-width:60px; }
+
+  @media(max-width:480px) { .mode-sel{flex-direction:column} .pw-row-admin{flex-wrap:wrap} }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="container">
+
+  <div class="header">
+    <div class="mission-label">⬡ classified transmission ⬡</div>
+    <h1>OPERATION<br>PULSAR HUNT</h1>
+    <div class="subtitle">// radio astronomy field mission //</div>
+  </div>
+
+
+
+  <!-- REGISTER -->
+  <div class="screen active" id="s-register">
+    <div class="panel">
+      <div class="panel-title">Mission Registration</div>
+      <p style="font-size:15px;color:var(--text);line-height:1.8;margin-bottom:16px;">
+        A dying pulsar is broadcasting a fragmented signal across the venue.
+        Find all <strong style="color:var(--accent)">3 signal nodes in order</strong>,
+        enter the secret word at each location to unlock the data fragment, decode the signal,
+        then plot the pulsar on the star map.
+      </p>
+      <div id="reg-alert" class="alert"></div>
+      <label>TEAM DESIGNATION</label>
+      <input type="text" id="team-input" placeholder="Enter your team name..." maxlength="30" style="margin-bottom:14px"
+        onkeydown="if(event.key==='Enter')registerTeam()">
+      <button class="btn btn-primary btn-full" onclick="registerTeam()">INITIATE MISSION →</button>
+    </div>
+  </div>
+
+  <!-- HUNT -->
+  <div class="screen" id="s-hunt">
+    <div class="live-timer" id="t-hunt">00:00</div>
+    <div class="panel">
+      <div class="panel-title">Signal Node Hunt</div>
+      <div class="prog-wrap"><div class="prog-bar" id="hunt-prog" style="width:0%"></div></div>
+      <div class="node-track" id="node-track"></div>
+      <div class="pw-box" id="pw-box">
+        <div class="pw-head">
+          <div class="pw-head-icon" id="pw-icon">📡</div>
+          <div>
+            <div class="pw-head-name" id="pw-name">NODE ALPHA</div>
+            <div class="pw-head-hint" id="pw-hint">Find this node's physical location, then enter the secret word on its card</div>
+          </div>
+        </div>
+        <div class="pw-row">
+          <input type="text" id="pw-in" placeholder="Enter secret word..." maxlength="20"
+            oninput="this.value=this.value.toUpperCase()"
+            onkeydown="if(event.key==='Enter')submitPW()">
+          <button class="btn btn-primary" onclick="submitPW()">UNLOCK</button>
+        </div>
+      </div>
+      <div id="hunt-alert" class="alert"></div>
+      <button class="btn btn-primary btn-full" id="to-decode" style="display:none" onclick="go('s-decode')">
+        ALL NODES FOUND → DECODE SIGNAL
+      </button>
+    </div>
+  </div>
+
+  <!-- DECODE -->
+  <div class="screen" id="s-decode">
+    <div class="live-timer" id="t-decode">00:00</div>
+    <div class="panel">
+      <div class="panel-title">Assembled Signal Data</div>
+      <div class="frags" id="frags"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Decode Query 1 / 3</div>
+      <div class="dq">
+        <div class="dq-text">Based on the pulse frequency of <span style="color:var(--accent3)">716 Hz</span>, what type of pulsar is this?</div>
+        <div class="dq-opts">
+          <button class="dq-opt" onclick="pick(1,'w',this)">Regular pulsar (~1 pulse per second)</button>
+          <button class="dq-opt" onclick="pick(1,'c',this)">Millisecond pulsar (hundreds of pulses per second)</button>
+          <button class="dq-opt" onclick="pick(1,'w',this)">Magnetar (irregular high-energy bursts)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Decode Query 2 / 3</div>
+      <div class="dq">
+        <div class="dq-text">Dispersion measure is <span style="color:var(--accent3)">328 pc/cm³</span>. What is the estimated distance?</div>
+        <div class="dq-opts">
+          <button class="dq-opt" onclick="pick(2,'w',this)">~500 light-years (local neighbourhood)</button>
+          <button class="dq-opt" onclick="pick(2,'w',this)">~5,000 light-years (inner spiral arm)</button>
+          <button class="dq-opt" onclick="pick(2,'c',this)">~12,000 light-years (outer galactic disc)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Decode Query 3 / 3</div>
+      <div class="dq">
+        <div class="dq-text">With RA <span style="color:var(--accent3)">18h 24m</span> and Dec <span style="color:var(--accent3)">−24°</span>, which galactic region is the pulsar in?</div>
+        <div class="dq-opts">
+          <button class="dq-opt" onclick="pick(3,'w',this)">Orion Arm — Cygnus region</button>
+          <button class="dq-opt" onclick="pick(3,'c',this)">Galactic centre direction — Sagittarius</button>
+          <button class="dq-opt" onclick="pick(3,'w',this)">Perseus Arm — Cassiopeia region</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="decode-alert" class="alert"></div>
+    <button class="btn btn-primary btn-full" id="to-map" style="display:none" onclick="initMap()">
+      COORDINATES LOCKED → PLOT ON STAR MAP
+    </button>
+  </div>
+
+  <!-- MAP -->
+  <div class="screen" id="s-map">
+    <div class="live-timer" id="t-map">00:00</div>
+    <div class="panel">
+      <div class="panel-title">Galactic Star Map</div>
+      <p style="font-size:12px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:13px;letter-spacing:1px;">// CLICK THE MAP TO PLOT THE PULSAR'S LOCATION</p>
+      <div class="map-wrap">
+        <canvas id="starMap"></canvas>
+        <div class="map-ra">RA  0h ─────────────────────── 24h</div>
+      </div>
+      <div id="map-hint" style="font-size:12px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:13px;display:none">
+        HINT: Target is RA 17h–19h, Dec −15° to −30° — look towards Sagittarius
+      </div>
+      <div id="map-alert" class="alert"></div>
+      <button class="btn btn-success btn-full" id="confirm-map" style="display:none" onclick="complete()">
+        ✓ CONFIRM PULSAR LOCATION
+      </button>
+    </div>
+  </div>
+
+  <!-- COMPLETE -->
+  <div class="screen" id="s-complete">
+    <div class="done-banner">
+      <div style="font-size:44px;margin-bottom:12px">🌟</div>
+      <h2>MISSION COMPLETE</h2>
+      <p style="font-size:15px;color:var(--text)">Pulsar identified and plotted. Team <strong id="done-name" style="color:var(--accent)"></strong> has been logged.</p>
+      <div class="time-big" id="done-time">00:00</div>
+      <p style="font-size:11px;color:var(--dim);font-family:'Share Tech Mono',monospace">ELAPSED TIME</p>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Leaderboard</div>
+      <div id="done-lb"></div>
+    </div>
+    <button class="btn btn-secondary btn-full" onclick="resetAll()">↩ New Team</button>
+  </div>
+
+</div>
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const NODES = [
+  { id:1, icon:'📡', name:'Node Alpha', hint:'Ask exco for the secret word to unlock this node', fk:'Pulse Frequency', fv:'716 Hz' },
+  { id:2, icon:'🔭', name:'Node Beta',  hint:'Ask exco for the secret word to unlock this node',  fk:'Dispersion Measure', fv:'328 pc/cm³' },
+  { id:3, icon:'🛸', name:'Node Gamma', hint:'Ask exco for the secret word to unlock this node', fk:'Coordinates', fv:'RA 18h 24m | Dec −24°' },
+];
+const TGT = { x0:0.68, x1:0.82, y0:0.47, y1:0.65 };
+
+// Hardcoded passwords — all 3 given verbally by exco one at a time
+const PW = { 1:'VORTEX', 2:'SYZYGY', 3:'ALBEDO' };
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+let LB  = JSON.parse(localStorage.getItem('ph_lb')    || '[]');
+let TMS = JSON.parse(localStorage.getItem('ph_teams') || '[]');
+
+// ── PLAYER STATE ──────────────────────────────────────────────────────────────
+let P = { team:'', t0:null, found:0, ans:{}, tid:null };
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function lbHTML(lb) {
+  if(!lb.length) return '<div class="lb-empty">// No completions yet.</div>';
+  const m=['🥇','🥈','🥉'];
+  return `<table class="lb-table">
+    <thead><tr><th>Rank</th><th>Team</th><th>Time</th></tr></thead>
+    <tbody>${lb.map((e,i)=>`<tr>
+      <td>${m[i]||(i+1)}</td><td>${e.team}</td>
+      <td style="color:var(--accent3)">${e.time}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ── REGISTER ──────────────────────────────────────────────────────────────────
+function registerTeam() {
+  const name=document.getElementById('team-input').value.trim();
+  const al=document.getElementById('reg-alert'); al.className='alert';
+  if(!name||name.length<2){al.textContent='ERROR: Enter a valid team name.';al.className='alert error';return;}
+  P={team:name,t0:Date.now(),found:0,ans:{},tid:null};
+  TMS=JSON.parse(localStorage.getItem('ph_teams')||'[]');
+  TMS.push({name,done:false,nodes:0});
+  localStorage.setItem('ph_teams',JSON.stringify(TMS));
+  startTimer();
+  renderHunt(); go('s-hunt');
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────────────────
+const TOTAL = 120;
+function startTimer() {
+  if(P.tid) clearInterval(P.tid);
+  P.tid=setInterval(()=>{
+    const elapsed=Math.floor((Date.now()-P.t0)/1000);
+    const remaining=TOTAL-elapsed;
+    if(remaining<=0){
+      clearInterval(P.tid);
+      ['t-hunt','t-decode','t-map'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='00:00';});
+      timeUp(); return;
+    }
+    const t=fmt(remaining*1000);
+    const colour=remaining<=10?'var(--danger)':remaining<=20?'var(--accent2)':'var(--accent2)';
+    ['t-hunt','t-decode','t-map'].forEach(id=>{
+      const e=document.getElementById(id);
+      if(e){e.textContent='⏱ '+t; e.style.color=colour;}
+    });
+  },200);
+}
+function timeUp() {
+  // Show timeout screen by repurposing complete screen
+  document.getElementById('done-name').textContent=P.team;
+  document.getElementById('done-time').textContent="TIME'S UP";
+  document.getElementById('done-time').style.color='var(--danger)';
+  document.getElementById('done-time').style.textShadow='0 0 20px rgba(255,51,102,.5)';
+  document.getElementById('done-lb').innerHTML='<div class="lb-empty" style="color:var(--danger)">// Mission failed — 45 seconds exceeded.</div>';
+  document.querySelector('.done-banner h2').textContent='MISSION FAILED';
+  document.querySelector('.done-banner h2').style.color='var(--danger)';
+  document.querySelector('.done-banner h2').style.textShadow='0 0 20px rgba(255,51,102,.5)';
+  document.querySelector('.done-banner div').textContent='💀';
+  go('s-complete');
+}
+function fmt(ms) {
+  const s=Math.floor(ms/1000);
+  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+function elapsed() { return fmt(Date.now()-P.t0); }
+
+// ── HUNT ──────────────────────────────────────────────────────────────────────
+function renderHunt() {
+  document.getElementById('node-track').innerHTML=NODES.map(n=>{
+    const st=n.id<=P.found?'done':n.id===P.found+1?'active':'locked';
+    return `<div class="node-step ${st}">
+      <div class="node-circle">${st==='done'?'✅':n.icon}</div>
+      <div class="node-lbl">${n.name.replace('Node ','')}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('hunt-prog').style.width=(P.found/3*100)+'%';
+  if(P.found<3){
+    const cur=NODES[P.found]; // next node to find (0-indexed = found index)
+    document.getElementById('pw-icon').textContent=cur.icon;
+    document.getElementById('pw-name').textContent=cur.name.toUpperCase();
+    document.getElementById('pw-hint').textContent=cur.hint;
+    document.getElementById('pw-box').style.display='block';
+    document.getElementById('pw-in').value='';
+    document.getElementById('hunt-alert').className='alert';
+  } else {
+    document.getElementById('pw-box').style.display='none';
+    document.getElementById('to-decode').style.display='block';
+  }
+}
+
+function submitPW() {
+  const val=document.getElementById('pw-in').value.trim().toUpperCase();
+  const al=document.getElementById('hunt-alert'); al.className='alert';
+  if(!val) return;
+  const next=P.found+1;
+  if(val===PW[next]) {
+    P.found++;
+    TMS=JSON.parse(localStorage.getItem('ph_teams')||'[]');
+    const t=TMS.find(t=>t.name===P.team);
+    if(t){t.nodes=P.found;localStorage.setItem('ph_teams',JSON.stringify(TMS));}
+    al.textContent=`✓ ${NODES[next-1].name.toUpperCase()} UNLOCKED — Fragment acquired!`;
+    al.className='alert success';
+    setTimeout(()=>{al.className='alert';renderHunt();},900);
+  } else {
+    al.textContent='✗ WRONG PASSWORD — Check the card at the node location carefully.';
+    al.className='alert error';
+    document.getElementById('pw-in').value='';
+  }
+}
+
+// ── DECODE ────────────────────────────────────────────────────────────────────
+function buildFrags() {
+  document.getElementById('frags').innerHTML=NODES.map(n=>
+    `<div class="frag"><span class="frag-key">${n.fk}</span><span class="frag-val">${n.fv}</span></div>`
+  ).join('');
+}
+document.addEventListener('DOMContentLoaded', buildFrags);
+
+function pick(q,r,btn) {
+  const panel=btn.closest('.panel');
+  panel.querySelectorAll('.dq-opt').forEach(b=>{b.disabled=true;b.classList.remove('correct','wrong');});
+  btn.classList.add(r==='c'?'correct':'wrong');
+  P.ans[q]=r;
+  checkDecode();
+}
+function checkDecode() {
+  if(Object.keys(P.ans).length<3) return;
+  const ok=Object.values(P.ans).every(v=>v==='c');
+  const al=document.getElementById('decode-alert');
+  if(ok){
+    al.textContent='✓ ALL QUERIES DECODED — Pulsar coordinates confirmed.';
+    al.className='alert success';
+    document.getElementById('to-map').style.display='block';
+  } else {
+    al.textContent='✗ ERRORS DETECTED — Some answers wrong. Incorrect ones will reset.';
+    al.className='alert error';
+    setTimeout(()=>{
+      for(let q=1;q<=3;q++){
+        if(P.ans[q]==='w'){
+          delete P.ans[q];
+          document.querySelectorAll('.panel').forEach(p=>{
+            const t=p.querySelector('.panel-title');
+            if(t&&t.textContent.includes('Query '+q)){
+              p.querySelectorAll('.dq-opt').forEach(b=>{b.disabled=false;b.classList.remove('correct','wrong');});
+            }
+          });
+        }
+      }
+      al.className='alert';
+    },1600);
+  }
+}
+
+// ── MAP ───────────────────────────────────────────────────────────────────────
+function initMap() {
+  go('s-map');
+  setTimeout(()=>{
+    const canvas=document.getElementById('starMap');
+    const ctx=canvas.getContext('2d');
+    const W=canvas.parentElement.clientWidth;
+    const H=Math.round(W/2);
+    canvas.width=W; canvas.height=H;
+    drawMap(ctx,W,H,null,null);
+    canvas.onclick=(e)=>{
+      const r=canvas.getBoundingClientRect();
+      const x=(e.clientX-r.left)/r.width;
+      const y=(e.clientY-r.top)/r.height;
+      drawMap(ctx,W,H,x,y);
+      const ok=x>=TGT.x0&&x<=TGT.x1&&y>=TGT.y0&&y<=TGT.y1;
+      const al=document.getElementById('map-alert');
+      const hint=document.getElementById('map-hint');
+      const btn=document.getElementById('confirm-map');
+      if(ok){
+        al.textContent='✓ POSITION LOCKED — Pulsar confirmed in Sagittarius.';
+        al.className='alert success';
+        hint.style.display='none'; btn.style.display='block';
+      } else {
+        al.textContent='✗ WRONG REGION — Review your decoded coordinates and try again.';
+        al.className='alert error';
+        hint.style.display='block'; btn.style.display='none';
+      }
+    };
+  },80);
+}
+
+function drawMap(ctx,W,H,px,py) {
+  ctx.fillStyle='#020810'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(13,48,96,.55)'; ctx.lineWidth=1;
+  for(let i=0;i<=24;i++){
+    const x=(i/24)*W;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+    if(i%6===0&&i>0){
+      ctx.fillStyle='rgba(74,96,128,.7)';
+      ctx.font='9px Share Tech Mono,monospace';
+      ctx.fillText(i+'h',x+2,H-5);
+    }
+  }
+  for(let j=0;j<=4;j++){const y=(j/4)*H;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  const g=ctx.createLinearGradient(0,H*.3,0,H*.7);
+  g.addColorStop(0,'transparent');g.addColorStop(.5,'rgba(0,20,60,.5)');g.addColorStop(1,'transparent');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // Stars
+  [[.05,.2,1],[.12,.7,1],[.18,.4,1.5],[.22,.85,1],[.28,.15,1],[.33,.55,1],[.38,.3,1],[.44,.75,1.5],
+   [.50,.45,1],[.55,.1,1],[.60,.65,1],[.65,.25,1],[.72,.5,1.5],[.78,.8,1],[.83,.35,1],[.88,.6,1],
+   [.94,.2,1],[.97,.75,1],[.15,.5,1],[.45,.9,1],[.25,.6,1],[.35,.2,1.5],[.58,.85,1],[.68,.4,1],
+   [.80,.15,1],[.90,.45,1],[.08,.9,1],[.42,.05,1],[.62,.15,1],[.85,.9,1],[.17,.3,1],[.52,.6,1],
+   [.66,.8,1],[.73,.2,1.5],[.40,.35,1]
+  ].forEach(([sx,sy,sz])=>{
+    ctx.fillStyle=`rgba(255,255,255,${.35+Math.random()*.5})`;
+    ctx.beginPath();ctx.arc(sx*W,sy*H,sz,0,Math.PI*2);ctx.fill();
+  });
+  // Labels
+  [{n:'ORION',x:.22,y:.32},{n:'CYGNUS',x:.84,y:.24},{n:'SAGITTARIUS ★',x:.72,y:.52,hi:true},
+   {n:'SCORPIUS',x:.67,y:.68},{n:'CASSIOPEIA',x:.02,y:.20}
+  ].forEach(c=>{
+    ctx.fillStyle=c.hi?'rgba(127,255,0,.78)':'rgba(74,96,128,.65)';
+    ctx.font=(c.hi?'bold ':'')+' 10px Share Tech Mono,monospace';
+    ctx.fillText(c.n,c.x*W,c.y*H);
+  });
+  // Target zone (very subtle)
+  ctx.strokeStyle='rgba(127,255,0,.12)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.strokeRect(TGT.x0*W,TGT.y0*H,(TGT.x1-TGT.x0)*W,(TGT.y1-TGT.y0)*H);
+  ctx.setLineDash([]);
+  // Marker
+  if(px!==null){
+    const ok=px>=TGT.x0&&px<=TGT.x1&&py>=TGT.y0&&py<=TGT.y1;
+    const col=ok?'#00ff88':'#ff3366';
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(px*W-12,py*H);ctx.lineTo(px*W+12,py*H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(px*W,py*H-12);ctx.lineTo(px*W,py*H+12);ctx.stroke();
+    ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(px*W,py*H,8,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(px*W,py*H,3,0,Math.PI*2);ctx.fill();
+    if(ok){ctx.fillStyle='rgba(0,255,136,.85)';ctx.font='10px Share Tech Mono,monospace';ctx.fillText('PSR J1824-2452',px*W+12,py*H-6);}
+  }
+}
+
+// ── COMPLETE ──────────────────────────────────────────────────────────────────
+function complete() {
+  clearInterval(P.tid);
+  const time=elapsed();
+  LB.push({team:P.team,time});
+  LB.sort((a,b)=>{const f=t=>{const[m,s]=t.split(':').map(Number);return m*60+s};return f(a.time)-f(b.time);});
+  localStorage.setItem('ph_lb',JSON.stringify(LB));
+  TMS=JSON.parse(localStorage.getItem('ph_teams')||'[]');
+  const t=TMS.find(t=>t.name===P.team);
+  if(t){t.done=true;t.nodes=3;localStorage.setItem('ph_teams',JSON.stringify(TMS));}
+  document.getElementById('done-name').textContent=P.team;
+  document.getElementById('done-time').textContent=time;
+  document.getElementById('done-time').style.color='var(--accent)';
+  document.getElementById('done-time').style.textShadow='var(--glow)';
+  document.getElementById('done-lb').innerHTML=lbHTML(LB);
+  document.querySelector('.done-banner h2').textContent='MISSION COMPLETE';
+  document.querySelector('.done-banner h2').style.color='var(--success)';
+  document.querySelector('.done-banner h2').style.textShadow='0 0 20px rgba(0,255,136,.5)';
+  document.querySelector('.done-banner div').textContent='🌟';
+  go('s-complete');
+}
+
+function resetAll() {
+  clearInterval(P.tid);
+  P={team:'',t0:null,found:0,ans:{},tid:null};
+  document.getElementById('team-input').value='';
+  ['reg-alert','hunt-alert','decode-alert','map-alert'].forEach(id=>document.getElementById(id).className='alert');
+  document.getElementById('to-decode').style.display='none';
+  document.getElementById('to-map').style.display='none';
+  document.getElementById('confirm-map').style.display='none';
+  document.getElementById('map-hint').style.display='none';
+  document.querySelectorAll('.dq-opt').forEach(b=>{b.disabled=false;b.classList.remove('correct','wrong');});
+  go('s-mode');
+}
+</script>
+</body>
+</html>
